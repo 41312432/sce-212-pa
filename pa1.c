@@ -17,10 +17,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 
 /* To avoid security error on Visual Studio */
 #define _CRT_SECURE_NO_WARNINGS
 
+/*====================================================================*/
+/*          ****** DO NOT MODIFY ANYTHING FROM THIS LINE ******       */
 #define MAX_NR_TOKENS	32	/* Maximum length of tokens in a command */
 #define MAX_TOKEN_LEN	64	/* Maximum length of single token */
 #define MAX_ASSEMBLY	256 /* Maximum length of assembly string */
@@ -28,6 +31,9 @@
 typedef unsigned char bool;
 #define true	1
 #define false	0
+/*          ****** DO NOT MODIFY ANYTHING UP TO THIS LINE ******      */
+/*====================================================================*/
+
 
 /***********************************************************************
  * translate
@@ -122,13 +128,24 @@ static int parse_command(char *assembly, int *nr_tokens, char *tokens[])
 
 
 
+/*====================================================================*/
+/*          ****** DO NOT MODIFY ANYTHING FROM THIS LINE ******       */
+
 /***********************************************************************
  * The main function of this program.
- * -------- DO NOT CHANGE ANY LINE BELOW THIS COMMENT ---------
  */
-int main(int argc, const char *argv[])
+int main(int argc, char * const argv[])
 {
 	char assembly[MAX_ASSEMBLY] = { '\0' };
+	FILE *input = stdin;
+
+	if (argc == 2) {
+		input = fopen(argv[1], "r");
+		if (!input) {
+			fprintf(stderr, "No input file %s\n", argv[1]);
+			return -EINVAL;
+		}
+	}
 
 	printf("*********************************************************\n");
 	printf("*          >> SCE212 MIPS translator  v0.01 <<          *\n");
@@ -144,12 +161,12 @@ int main(int argc, const char *argv[])
 	printf("*********************************************************\n\n");
 	printf(">> ");
 
-	while (fgets(assembly, sizeof(assembly), stdin)) {
+	while (fgets(assembly, sizeof(assembly), input)) {
 		char *tokens[MAX_NR_TOKENS] = { NULL };
 		int nr_tokens = 0;
 		unsigned int machine_code;
 
-		for (int i = 0; i < strlen(assembly); i++) {
+		for (size_t i = 0; i < strlen(assembly); i++) {
 			assembly[i] = tolower(assembly[i]);
 		}
 
@@ -162,6 +179,8 @@ int main(int argc, const char *argv[])
 
 		printf(">> ");
 	}
+
+	if (input != stdin) fclose(input);
 
 	return 0;
 }
