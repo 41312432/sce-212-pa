@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <getopt.h>
 #include <errno.h>
 
 /* To avoid security error on Visual Studio */
@@ -131,6 +132,8 @@ static int parse_command(char *assembly, int *nr_tokens, char *tokens[])
 /*====================================================================*/
 /*          ****** DO NOT MODIFY ANYTHING FROM THIS LINE ******       */
 
+static bool __verbose = true;
+
 /***********************************************************************
  * The main function of this program.
  */
@@ -138,28 +141,43 @@ int main(int argc, char * const argv[])
 {
 	char assembly[MAX_ASSEMBLY] = { '\0' };
 	FILE *input = stdin;
+	int opt;
 
-	if (argc == 2) {
-		input = fopen(argv[1], "r");
-		if (!input) {
-			fprintf(stderr, "No input file %s\n", argv[1]);
-			return -EINVAL;
+	while ((opt = getopt(argc, argv, "q")) != -1) {
+		printf("%c\n", opt);
+		switch (opt) {
+		case 'q':
+			__verbose = false;
+			break;
 		}
 	}
 
-	printf("*********************************************************\n");
-	printf("*          >> SCE212 MIPS translator  v0.01 <<          *\n");
-	printf("*                                                       *\n");
-	printf("*                                       .---.           *\n");
-	printf("*                           .--------.  |___|           *\n");
-	printf("*                           |.------.|  |=. |           *\n");
-	printf("*                           || >>_  ||  |-- |           *\n");
-	printf("*                           |'------'|  |   |           *\n");
-	printf("*                           ')______('~~|___|           *\n");
-	printf("*                                                       *\n");
-	printf("*                                   Fall 2019           *\n");
-	printf("*********************************************************\n\n");
-	printf(">> ");
+	argc -= optind;
+	argv += optind;
+
+	if (argc >= 1) {
+		input = fopen(argv[0], "r");
+		if (!input) {
+			fprintf(stderr, "No input file %s\n", argv[0]);
+			return EXIT_FAILURE;
+		}
+	}
+
+	if (input == stdin && __verbose) {
+		printf("*********************************************************\n");
+		printf("*          >> SCE212 MIPS translator  v0.01 <<          *\n");
+		printf("*                                                       *\n");
+		printf("*                                       .---.           *\n");
+		printf("*                           .--------.  |___|           *\n");
+		printf("*                           |.------.|  |=. |           *\n");
+		printf("*                           || >>_  ||  |-- |           *\n");
+		printf("*                           |'------'|  |   |           *\n");
+		printf("*                           ')______('~~|___|           *\n");
+		printf("*                                                       *\n");
+		printf("*                                   Fall 2019           *\n");
+		printf("*********************************************************\n\n");
+		printf(">> ");
+	}
 
 	while (fgets(assembly, sizeof(assembly), input)) {
 		char *tokens[MAX_NR_TOKENS] = { NULL };
@@ -177,10 +195,10 @@ int main(int argc, char * const argv[])
 
 		fprintf(stderr, "0x%08x\n", machine_code);
 
-		printf(">> ");
+		if (input == stdin && __verbose) printf(">> ");
 	}
 
 	if (input != stdin) fclose(input);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
