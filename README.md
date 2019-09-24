@@ -6,13 +6,14 @@
 
 Translate MIPS assembly code into corresponding MIPS machine code.
 
+
 ### Problem Specification
 
-- You will implement a MIPS assembly translator that translate MIPS assembly into MIPS machine code one line at a time. To this end, you will extend the string parser submitted for PA0, implement a function that translate tokens into bits, and merge the bits into one 32-bit value.
+- Implement a MIPS assembly translator that translate MIPS assembly into MIPS machine code one line at a time. To this end, you will extend the string parser submitted for PA0, translate tokens into bits, and merge the bits, and produce one 32-bit machine instruction.
 
-- The framework will get a line of input from CLI, make it to lowercase and call `parse_command()`. After getting the number of tokens and `tokens[]` as of PA0, the framework will call `translate()` function with them. You should translate the tokens and return a 32-bit MIPS machine code.
+- The framework will get a line of input from CLI, make it to lowercase and call `parse_command()`. After getting the number of tokens and `tokens[]` as of PA0, the framework will call `translate()` function with them. You should write your code in the function to translate the tokenized assembly code and to return a 32-bit MIPS machine instruction.
 
-- Your translator should support following MIPS assembly.
+- The translator should support following MIPS assembly instructions.
 
   | Name   | Opcode / opcode + funct |
   | ------ | ----------------------- |
@@ -36,18 +37,19 @@ Translate MIPS assembly code into corresponding MIPS machine code.
 - ```
   add s0 t1 gp    /* s0 <- t1 + gp */
   sub s4 s1 zero  /* s4 <- s1 + zero */
-  sll s0 s2 3     /* s0 <- s2 << 3 */
+  sll s0 s2 3     /* s0 <- s2 << 3. shift amount comes to the last */
   sra s1 t0 -5    /* s1 <- t0 >> -5 w/ sign extension */
   ```
 
 - I-format instructions are the similar
 
 - ```
-  addi s1 s2 0x16 /* s1 <- s2 + 0x16 */
+  addi s1 s2 0x16 /* s1 <- s2 + 0x16. Immeidate values and address offset
+	                   come to the last */
   lw t0 s1 32     /* Load t0 with a word at s1 + 32 */
   ```
 
-- The registers are named as follow;
+- The machine has 32 registers and they are specified in the assembly as follow;
 
   | Name   | Number |
   | ------ | ------ |
@@ -73,32 +75,61 @@ Translate MIPS assembly code into corresponding MIPS machine code.
   -0x42 /* -66 */
   ```
 
-- Unspecified register and `shamt` parts should be 0. For example, `shamt` part should be 0b00000 for `add` instruction. Likewise, `rs` part should be 0b00000 for `sll` instruction.
+- Unspecified register and `shamt` parts should be all 0's. For example, `shamt` part should be 0b00000 for `add` instruction. Likewise, `rs` part should be 0b00000 for `sll` instruction.
+
+
+### Example
+```
+*********************************************************
+*          >> SCE212 MIPS translator  v0.01 <<          *
+*                                                       *
+*                                       .---.           *
+*                           .--------.  |___|           *
+*                           |.------.|  |=. |           *
+*                           || >>_  ||  |-- |           *
+*                           |'------'|  |   |           *
+*                           ')______('~~|___|           *
+*                                                       *
+*                                   Fall 2019           *
+*********************************************************
+
+>> add t0 t1 t2
+0x012a4020
+>> addi sp sp -0x10
+0x23bdfff0
+>> sll t0 t1 10
+0x00094280
+```
+
+
+### Hints/Tips
+
+- You may reuse your `parse_command()` from PA0, or reimplement as we need. Now you can use any standard C library functions, however, do not use Windows-specific functions though otherwise it will make a compile error on the server.
+- Helpful functions:
+  - `strcmp/strncmp`: For matching commands and register names
+  - `strotol/strtoimax`: Coverting decimal/hexadecimal numbers (regardless of sign) in string to corresponding long/int numbers
+- You can use `0b` prefix to directly specify a binary number.
+- You may use a mask to include `shamt` part in R-format and constant part in I-format into the machine code properly. Use bitwise operations (`<<, >>, |, &`).
+
 
 ### Submission / Grading
 
-- Use [PAsubmit](https://sslab.ajou.ac.kr/pasubmit)  for submission
-  - Will be tested using test inputs in testcase files `testcase-r-format`, `testcase-shifts`, and `testcase-i-format`.
+- Use [PAsubmit](https://sslab.ajou.ac.kr/pasubmit) for submission
+	- 180 pts in total
 - Source: pa1.c (160 pts)
+  - Will be tested with testcase files `testcase-r-format`, `testcase-shifts`, and `testcase-i-format`.
 - Git repository URL at git.ajou.ac.kr (10 pts)
 	- Refer to https://www.youtube.com/channel/UC-Un-7jmeP-1OaHkS7awO0Q for using gitlab at Ajou University.
-- Document: one PDF document (10 pts) including;
+  - Will be announced shortly
+- Document: *One PDF* document (10 pts) including;
 	- How do you translate the instructions
 		- R-format / I-format
 	- How do you translate the register names to corresponding register numbers
 	- How do you convert shamt/immediate values from strings to corresponding numbers
-	- Lesson learned
+	- Lesson learned (if you have any)
 	- NO MORE THAN ***TWO*** PAGES
 	- DO NOT INCLUDE COVER PAGE
 		- No need to specify your name nor student ID on the document
   - DO NOT COMPRESS
 	- OTHERWISE YOU WILL GET 0 pts for the report
-
-### Hints/Tips
-
-- You may reuse your `parse_command()` from PA0, or reimplement as we need. Now you can use any standard C library functions (Do NOT USE Windows-specific functions though otherwise it will make a compile error on the server).
-- Following functions might help your implementation
-  - `strcmp/strncmp`: For matching commands and register names
-  - `strotol/strtoimax`: Coverting decimal/hexadecimal numbers (regardless of sign) in string to corresponding long/int numbers
-- You can use `0b` prefix to specify a binary numberi directly
-- You may use a mask to include `shamt` part in R-format and constant part in I-format into the machine code properly.
+- WILL NOT ANSWER FOR THOSE ALREADY SPECIFIED ON THE HANDOUT.
