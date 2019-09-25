@@ -17,7 +17,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <getopt.h>
 #include <errno.h>
 
 /* To avoid security error on Visual Studio */
@@ -132,8 +131,6 @@ static int parse_command(char *assembly, int *nr_tokens, char *tokens[])
 /*====================================================================*/
 /*          ****** DO NOT MODIFY ANYTHING FROM THIS LINE ******       */
 
-static bool __verbose = true;
-
 /***********************************************************************
  * The main function of this program.
  */
@@ -141,21 +138,8 @@ int main(int argc, char * const argv[])
 {
 	char assembly[MAX_ASSEMBLY] = { '\0' };
 	FILE *input = stdin;
-	int opt;
 
-	while ((opt = getopt(argc, argv, "q")) != -1) {
-		printf("%c\n", opt);
-		switch (opt) {
-		case 'q':
-			__verbose = false;
-			break;
-		}
-	}
-
-	argc -= optind;
-	argv += optind;
-
-	if (argc >= 1) {
+	if (argc > 1) {
 		input = fopen(argv[0], "r");
 		if (!input) {
 			fprintf(stderr, "No input file %s\n", argv[0]);
@@ -163,7 +147,7 @@ int main(int argc, char * const argv[])
 		}
 	}
 
-	if (input == stdin && __verbose) {
+	if (input == stdin) {
 		printf("*********************************************************\n");
 		printf("*          >> SCE212 MIPS translator  v0.01 <<          *\n");
 		printf("*                                                       *\n");
@@ -195,7 +179,7 @@ int main(int argc, char * const argv[])
 
 		fprintf(stderr, "0x%08x\n", machine_code);
 
-		if (input == stdin && __verbose) printf(">> ");
+		if (input == stdin) printf(">> ");
 	}
 
 	if (input != stdin) fclose(input);
