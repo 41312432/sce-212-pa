@@ -101,26 +101,30 @@ Translate MIPS assembly code into corresponding MIPS machine code.
 0x00094280
 ```
 
+- DO NOT MODIFY CODES IN SPECIFIED ZONES.
+
 
 ### Hints/Tips
 
 - You may reuse your `parse_command()` from PA0, or reimplement as we need. Now you can use any standard C library functions, however, do not use Windows-specific functions though otherwise it will make a compile error on the server.
+
+- You can use `0b` prefix to directly specify a binary number.
+
+- You may use a mask to include `shamt` part in R-format and constant part in I-format into the machine code properly. Use bitwise operations (`<<, >>, |, &`).
+
 - Helpful functions:
   - `strcmp/strncmp`: For matching commands and register names
   - `strotol/strtoimax`: Coverting decimal/hexadecimal numbers (regardless of sign) in string to corresponding long/int numbers
-- You can use `0b` prefix to directly specify a binary number.
-- You may use a mask to include `shamt` part in R-format and constant part in I-format into the machine code properly. Use bitwise operations (`<<, >>, |, &`).
 
 
 ### Submission / Grading
 
 - Use [PAsubmit](https://sslab.ajou.ac.kr/pasubmit) for submission
 	- 180 pts in total
+
 - Source: pa1.c (160 pts)
   - Will be tested with testcase files `testcase-r-format`, `testcase-shifts`, and `testcase-i-format`.
-- Git repository URL at git.ajou.ac.kr (10 pts)
-	- Refer to https://www.youtube.com/channel/UC-Un-7jmeP-1OaHkS7awO0Q for using gitlab at Ajou University.
-  - Will be announced shortly
+
 - Document: *One PDF* document (10 pts) including;
 	- How do you translate the instructions
 		- R-format / I-format
@@ -132,4 +136,9 @@ Translate MIPS assembly code into corresponding MIPS machine code.
 		- No need to specify your name nor student ID on the document
   - DO NOT COMPRESS
 	- OTHERWISE YOU WILL GET 0 pts for the report
-- WILL NOT ANSWER FOR THOSE ALREADY SPECIFIED ON THE HANDOUT.
+
+- Git repository URL at git.ajou.ac.kr (10 pts)
+	- Refer to https://www.youtube.com/channel/UC-Un-7jmeP-1OaHkS7awO0Q for using gitlab at Ajou University.
+  - Will be announced shortly
+
+- WILL NOT ANSWER THE QUESTIONS ABOUT THOSE ALREADY SPECIFIED ON THE HANDOUT.
