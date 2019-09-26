@@ -21,6 +21,7 @@
 
 /* To avoid security error on Visual Studio */
 #define _CRT_SECURE_NO_WARNINGS
+#pragma warning(disable : 4996)
 
 /*====================================================================*/
 /*          ****** DO NOT MODIFY ANYTHING FROM THIS LINE ******       */
@@ -97,7 +98,7 @@ static bool __is_separator(char *c)
 {
 	char *separators = " \t\r\n,.";
 
-	for (int i = 0; i < strlen(separators); i++) {
+	for (size_t i = 0; i < strlen(separators); i++) {
 		if (*c == separators[i]) return true;	
 	}
 
