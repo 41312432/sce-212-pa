@@ -141,7 +141,7 @@ int main(int argc, char * const argv[])
 	FILE *input = stdin;
 
 	if (argc > 1) {
-		input = fopen(argv[0], "r");
+		input = fopen(argv[1], "r");
 		if (!input) {
 			fprintf(stderr, "No input file %s\n", argv[0]);
 			return EXIT_FAILURE;
