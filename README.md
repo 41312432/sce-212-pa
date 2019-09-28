@@ -20,7 +20,7 @@ Translate MIPS assembly code into corresponding MIPS machine code.
   | `add`  | 0 + 0x20                |
   | `addi` | 0x08                    |
   | `sub`  | 0 + 0x22                |
-  | `and`  | 0 + 0x21                |
+  | `and`  | 0 + 0x24                |
   | `andi` | 0x0c                    |
   | `or`   | 0 + 0x25                |
   | `ori`  | 0x0d                    |
