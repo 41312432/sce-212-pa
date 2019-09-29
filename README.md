@@ -114,7 +114,7 @@ Translate MIPS assembly code into corresponding MIPS machine code.
 
 - Helpful functions:
   - `strcmp/strncmp`: For matching commands and register names
-  - `strotol/strtoimax`: Coverting decimal/hexadecimal numbers (regardless of sign) in string to corresponding long/int numbers
+  - `strtol/strtoimax`: Converting decimal/hexadecimal numbers (regardless of sign) in string to corresponding long/int numbers
 
 
 ### Submission / Grading
