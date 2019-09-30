@@ -1,6 +1,6 @@
 ## Project #1: Assembly to Machine Code Translator
 
-### ***Due on 11:59:59pm, October 4 (Friday)***
+### ***Due on 11:59:59pm, October 5 (Saturday)***
 
 ### Goal
 
