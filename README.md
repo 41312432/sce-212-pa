@@ -139,6 +139,6 @@ Translate MIPS assembly code into corresponding MIPS machine code.
 
 - Git repository URL at git.ajou.ac.kr (10 pts)
 	- Refer to https://www.youtube.com/channel/UC-Un-7jmeP-1OaHkS7awO0Q for using gitlab at Ajou University.
-  - Will be announced shortly
+  - Currently, PASubmit only accepts *HTTP + deploy token*. Create a repository at https://git.ajou.ac.kr, create a deploy token from "Settings/Repository/Deploy Tokens", and input the generated token and password. Double check that your repository is private.
 
 - WILL NOT ANSWER THE QUESTIONS ABOUT THOSE ALREADY SPECIFIED ON THE HANDOUT.
