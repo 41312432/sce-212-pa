@@ -173,12 +173,14 @@ static int process_instruction(unsigned int instr)
 
         _funct = instr & (0x0000003F);      //5~0Mask
     }else if(_opcode == 0x02 || _opcode == 0x03){        //J-format
+
         _addr = instr & (0x03FFFFFF);       //25~0Mask
-        _jumpAddr = (pc & (0xF0000000) + (_addr << 2) + 0x00);
+        _jumpAddr = ( (pc & (0xF0000000)) + (_addr << 2) + 0b00);
     }else if(_opcode == 0x3F){          //halt
-        printf("HALT");
+
         return 0;
     }else{          //I-format
+
         _rs = instr & (0x03E00000);     //25~21Mask
         _rs = _rs >> 21;
 
@@ -189,15 +191,17 @@ static int process_instruction(unsigned int instr)
 
         _zeroExtImm = 0x00000000 | _imme;
 
-        if (_imme < 0)
+        if ((_imme << 16 ) < 0) {
             _signExtImm = 0xFFFF0000 | _imme;
+        }
         else
             _signExtImm = 0x00000000 | _imme;
 
-        if (_imme < 0)
-            _branchAddr = 0xFFFC0000 + (_imme << 2);
+        if ((_imme << 16 ) < 0){
+            _branchAddr = (0xFFFC0000 + (_imme << 2) + 0b00 );
+        }
         else
-            _branchAddr = 0x00000000 + (_imme << 2);
+            _branchAddr = (0x00000000 + (_imme << 2) + 0b00 );
     }
 
     switch(_opcode){
@@ -225,10 +229,10 @@ static int process_instruction(unsigned int instr)
                     registers[_rd] = registers[_rt] >> _shamt;
                     return 1;
                 case 0x03:      //Shift Right Arithmetic
-                    if((signed int)registers[_rd] < 0) {
+                    if((signed int)registers[_rt] < 0) {
                         _extImm = _extImm << (32 - _shamt);
                         registers[_rd] = registers[_rt] >> _shamt;
-                        registers[_rd] = registers[_rd] & _extImm;
+                        registers[_rd] = registers[_rd] | _extImm;
                     }else {
                         registers[_rd] = registers[_rt] >> _shamt;
                     }return 1;
@@ -249,14 +253,12 @@ static int process_instruction(unsigned int instr)
             break;
         case 0x0D:      //OR Immediate
             registers[_rt] = registers[_rs] | _zeroExtImm;
-            printf("wtf!!");
             break;
-        case 0b100011:      //Load Word
-            registers[_rt] = ((int)(memory[(registers[_rs] + _signExtImm)]) << 24)
-                            &((int)(memory[(registers[_rs] + _signExtImm + 1)]) << 16)
-                            &((int)(memory[(registers[_rs] + _signExtImm + 2)]) << 8)
-                            &((int)(memory[(registers[_rs] + _signExtImm + 3)]));
-            printf("wtf");
+        case 0x23:      //Load Word
+            registers[_rt] = ((unsigned int)(memory[(registers[_rs] + _signExtImm)]) << 24)
+                            |((unsigned int)(memory[(registers[_rs] + _signExtImm + 1)]) << 16)
+                            |((unsigned int)(memory[(registers[_rs] + _signExtImm + 2)]) << 8)
+                            |((unsigned int)(memory[(registers[_rs] + _signExtImm + 3)]));
             break;
         case 0x2B:      //Store Word
             memory[(registers[_rs] + _signExtImm)] = (registers[_rt] & 0xFF000000) >> 24;
@@ -269,17 +271,17 @@ static int process_instruction(unsigned int instr)
             break;
         case 0x04:      //Branch On Equal
             if(registers[_rs] == registers[_rt])
-                pc = pc + 4 + _branchAddr;
+                pc = pc + _branchAddr;
             break;
         case 0x05:      //Branch On Not Equal
             if(registers[_rs] != registers[_rt])
-                pc = pc + 4 + _branchAddr;
+                pc = pc + _branchAddr;
             break;
         case 0x02:      //Jump
             pc = _jumpAddr;
             break;
         case 0x03:      //Jump And Link
-            registers[31] = pc + 8;
+            registers[31] = pc;
             pc = _jumpAddr;
             break;
         default:
