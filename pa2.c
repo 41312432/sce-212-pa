@@ -137,7 +137,7 @@ static inline bool strmatch(char * const str, const char *expect)
  */
 static int process_instruction(unsigned int instr)
 {
-    int _opcode = 0;
+    unsigned int _opcode = 0;
 
     int _rs = 0;
     int _rt = 0;
@@ -176,6 +176,7 @@ static int process_instruction(unsigned int instr)
         _addr = instr & (0x03FFFFFF);       //25~0Mask
         _jumpAddr = (pc & (0xF0000000) + (_addr << 2) + 0x00);
     }else if(_opcode == 0x3F){          //halt
+        printf("HALT");
         return 0;
     }else{          //I-format
         _rs = instr & (0x03E00000);     //25~21Mask
@@ -184,7 +185,7 @@ static int process_instruction(unsigned int instr)
         _rt = instr & (0x001F0000);     //20~16Mask
         _rt = _rt >> 16;
 
-        _imme = instr & (0x0000FFFF);       //15~0Mask
+        _imme = instr & (0xFFFF);       //15~0Mask
 
         _zeroExtImm = 0x00000000 | _imme;
 
@@ -192,6 +193,7 @@ static int process_instruction(unsigned int instr)
             _signExtImm = 0xFFFF0000 | _imme;
         else
             _signExtImm = 0x00000000 | _imme;
+
         if (_imme < 0)
             _branchAddr = 0xFFFC0000 + (_imme << 2);
         else
@@ -203,25 +205,25 @@ static int process_instruction(unsigned int instr)
             switch(_funct){
                 case 0x20:      //ADD
                     registers[_rd] = registers[_rs] + registers[_rt];
-                    break;
+                    return 1;
                 case 0x22:      //SUB
                     registers[_rd] = registers[_rs] - registers[_rt];
-                    break;
+                    return 1;
                 case 0x24:      //AND
                     registers[_rd] = registers[_rs] & registers[_rt];
-                    break;
+                    return 1;
                 case 0x25:      //OR
                     registers[_rd] = registers[_rs] | registers[_rt];
-                    break;
+                    return 1;
                 case 0x27:      //NOR
                     registers[_rd] = ~(registers[_rs] | registers[_rt]);
-                    break;
+                    return 1;
                 case 0x00:      //Shift Left Logical
                     registers[_rd] = registers[_rt] << _shamt;
-                    break;
+                    return 1;
                 case 0x02:      //Shift Right Logical
                     registers[_rd] = registers[_rt] >> _shamt;
-                    break;
+                    return 1;
                 case 0x03:      //Shift Right Arithmetic
                     if((signed int)registers[_rd] < 0) {
                         _extImm = _extImm << (32 - _shamt);
@@ -229,16 +231,16 @@ static int process_instruction(unsigned int instr)
                         registers[_rd] = registers[_rd] & _extImm;
                     }else {
                         registers[_rd] = registers[_rt] >> _shamt;
-                    }break;;
+                    }return 1;
                 case 0x2a:      //Set Less Than
                     registers[_rd] = (registers[_rs] < registers[_rt])? 1 : 0;
-                    break;
+                    return 1;
                 case 0x08:      //Jump Register
                     pc = registers[_rs];
-                    break;
+                    return 1;
                 default:
                     return 0;
-            }return 1;
+            }
         case 0x08:      //ADD Immediate
             registers[_rt] = registers[_rs] + _signExtImm;
             break;
@@ -247,15 +249,20 @@ static int process_instruction(unsigned int instr)
             break;
         case 0x0D:      //OR Immediate
             registers[_rt] = registers[_rs] | _zeroExtImm;
+            printf("wtf!!");
             break;
-        case 0x23:      //Load Word
-            registers[_rt] = ((memory[(registers[_rs] + _signExtImm)]) << 24)
-                            +((memory[(registers[_rs] + _signExtImm + 1)]) << 16)
-                            +((memory[(registers[_rs] + _signExtImm + 2)]) << 8)
-                            +((memory[(registers[_rs] + _signExtImm + 3)]));
+        case 0b100011:      //Load Word
+            registers[_rt] = ((int)(memory[(registers[_rs] + _signExtImm)]) << 24)
+                            &((int)(memory[(registers[_rs] + _signExtImm + 1)]) << 16)
+                            &((int)(memory[(registers[_rs] + _signExtImm + 2)]) << 8)
+                            &((int)(memory[(registers[_rs] + _signExtImm + 3)]));
+            printf("wtf");
             break;
         case 0x2B:      //Store Word
-            memory[(registers[_rs] + _signExtImm)] = (unsigned char)registers[_rt];
+            memory[(registers[_rs] + _signExtImm)] = (registers[_rt] & 0xFF000000) >> 24;
+            memory[(registers[_rs] + _signExtImm)+1] = (registers[_rt] & 0x00FF0000) >> 16;
+            memory[(registers[_rs] + _signExtImm)+2] = (registers[_rt] & 0x0000FF00) >> 8;
+            memory[(registers[_rs] + _signExtImm)+3] = (registers[_rt] & 0x000000FF);
             break;
         case 0x0A:      //Set Less Than Immediate
             registers[_rt] = (registers[_rs] < _signExtImm)? 1 : 0;
