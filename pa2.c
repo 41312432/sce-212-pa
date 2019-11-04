@@ -249,7 +249,10 @@ static int process_instruction(unsigned int instr)
             registers[_rt] = registers[_rs] | _zeroExtImm;
             break;
         case 0x23:      //Load Word
-            registers[_rt] = (unsigned int)memory[(registers[_rs] + _signExtImm)];
+            registers[_rt] = ((memory[(registers[_rs] + _signExtImm)]) << 24)
+                            +((memory[(registers[_rs] + _signExtImm + 1)]) << 16)
+                            +((memory[(registers[_rs] + _signExtImm + 2)]) << 8)
+                            +((memory[(registers[_rs] + _signExtImm + 3)]));
             break;
         case 0x2B:      //Store Word
             memory[(registers[_rs] + _signExtImm)] = (unsigned char)registers[_rt];
