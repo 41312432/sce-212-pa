@@ -187,11 +187,11 @@ static int process_instruction(unsigned int instr)
         _imme = instr & (0x0000FFFF);       //15~0Mask
 
         _zeroExtImm = 0xFFFF0000 | _imme;
-        if (_imme << 0)
+        if (_imme < 0)
             _signExtImm = 0xFFFF0000 | _imme;
         else
             _signExtImm = 0x00000000 | _imme;
-        if (_imme << 0)
+        if (_imme < 0)
             _branchAddr = 0xFFFC0000 + (_imme << 2);
         else
             _branchAddr = 0x00000000 + (_imme << 2);
@@ -200,11 +200,11 @@ static int process_instruction(unsigned int instr)
     switch(_opcode){
         case 0:
             switch(_funct){
-                case 0x20:      //AND
+                case 0x20:      //ADD
                     registers[_rd] = registers[_rs] + registers[_rt];
                     break;
                 case 0x22:      //SUB
-                    registers[_rd] = registers[_rs] + registers[_rt];
+                    registers[_rd] = registers[_rs] - registers[_rt];
                     break;
                 case 0x24:      //AND
                     registers[_rd] = registers[_rs] & registers[_rt];
@@ -271,8 +271,8 @@ static int process_instruction(unsigned int instr)
             registers[31] = pc + 8;
             pc = _jumpAddr;
             break;
-        case 0x3F:
-            break;
+        default:
+            return 0;
     }
 	return 1;
 }
