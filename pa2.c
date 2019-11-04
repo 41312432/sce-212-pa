@@ -186,7 +186,8 @@ static int process_instruction(unsigned int instr)
 
         _imme = instr & (0x0000FFFF);       //15~0Mask
 
-        _zeroExtImm = 0xFFFF0000 | _imme;
+        _zeroExtImm = 0x00000000 | _imme;
+
         if (_imme < 0)
             _signExtImm = 0xFFFF0000 | _imme;
         else
@@ -222,7 +223,7 @@ static int process_instruction(unsigned int instr)
                     registers[_rd] = registers[_rt] >> _shamt;
                     break;
                 case 0x03:      //Shift Right Arithmetic
-                    if(registers[_rd] < 0) {
+                    if((signed int)registers[_rd] < 0) {
                         _extImm = _extImm << (32 - _shamt);
                         registers[_rd] = registers[_rt] >> _shamt;
                         registers[_rd] = registers[_rd] & _extImm;
@@ -237,7 +238,7 @@ static int process_instruction(unsigned int instr)
                     break;
                 default:
                     return 0;
-            }
+            }return 1;
         case 0x08:      //ADD Immediate
             registers[_rt] = registers[_rs] + _signExtImm;
             break;
@@ -248,10 +249,10 @@ static int process_instruction(unsigned int instr)
             registers[_rt] = registers[_rs] | _zeroExtImm;
             break;
         case 0x23:      //Load Word
-            registers[_rt] = memory[registers[_rs] + _signExtImm];
+            registers[_rt] = (unsigned int)memory[(registers[_rs] + _signExtImm)];
             break;
         case 0x2B:      //Store Word
-            memory[registers[_rs] + _signExtImm] = registers[_rt];
+            memory[(registers[_rs] + _signExtImm)] = (unsigned char)registers[_rt];
             break;
         case 0x0A:      //Set Less Than Immediate
             registers[_rt] = (registers[_rs] < _signExtImm)? 1 : 0;
