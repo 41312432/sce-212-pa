@@ -268,12 +268,11 @@ static int process_instruction(unsigned int instr)
             pc = _jumpAddr;
             break;
         case 0x03:      //Jump And Link
-            registers[31]=pc+8;
+            registers[31] = pc + 8;
             pc = _jumpAddr;
             break;
-        default:
-            return 0;
-//        case 0x3F:      //halt
+        case 0x3F:
+            break;
     }
 	return 1;
 }
