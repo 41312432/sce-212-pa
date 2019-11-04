@@ -137,7 +137,145 @@ static inline bool strmatch(char * const str, const char *expect)
  */
 static int process_instruction(unsigned int instr)
 {
-	return 0;
+    int _opcode = 0;
+
+    int _rs = 0;
+    int _rt = 0;
+    int _rd = 0;
+
+    int _shamt = 0;
+    int _funct = 0;
+    int _imme = 0;
+    int _addr = 0;
+
+    int _signExtImm = 0;
+    int _zeroExtImm = 0;
+    int _branchAddr = 0;
+    int _jumpAddr = 0;
+
+    int _extImm = 0xFFFFFFFF;
+
+    _opcode = instr & (0xFC000000);     //31~26Mask
+    _opcode = _opcode >> 26;
+
+    if(_opcode == 0){         //R-format
+        _rs = instr & (0x03E00000);     //25~21Mask
+        _rs = _rs >> 21;
+
+        _rt = instr & (0x001F0000);     //20~16Mask
+        _rt = _rt >> 16;
+
+        _rd = instr & (0x0000F800);     //15~11Mask
+        _rd = _rd >> 11;
+
+        _shamt = instr & (0x000007C0);      //10~6Mask
+        _shamt = _shamt >> 6;
+
+        _funct = instr & (0x0000003F);      //5~0Mask
+    }else if(_opcode == 0x02 || _opcode == 0x03){        //J-format
+        _addr = instr & (0x03FFFFFF);       //25~0Mask
+        _jumpAddr = (pc & (0xF0000000) + (_addr << 2) + 0x00);
+    }else if(_opcode == 0x3F){          //halt
+        return 0;
+    }else{          //I-format
+        _rs = instr & (0x03E00000);     //25~21Mask
+        _rs = _rs >> 21;
+
+        _rt = instr & (0x001F0000);     //20~16Mask
+        _rt = _rt >> 16;
+
+        _imme = instr & (0x0000FFFF);       //15~0Mask
+
+        _zeroExtImm = 0xFFFF0000 | _imme;
+        if (_imme << 0)
+            _signExtImm = 0xFFFF0000 | _imme;
+        else
+            _signExtImm = 0x00000000 | _imme;
+        if (_imme << 0)
+            _branchAddr = 0xFFFC0000 + (_imme << 2);
+        else
+            _branchAddr = 0x00000000 + (_imme << 2);
+    }
+
+    switch(_opcode){
+        case 0:
+            switch(_funct){
+                case 0x20:      //AND
+                    registers[_rd] = registers[_rs] + registers[_rt];
+                    break;
+                case 0x22:      //SUB
+                    registers[_rd] = registers[_rs] + registers[_rt];
+                    break;
+                case 0x24:      //AND
+                    registers[_rd] = registers[_rs] & registers[_rt];
+                    break;
+                case 0x25:      //OR
+                    registers[_rd] = registers[_rs] | registers[_rt];
+                    break;
+                case 0x27:      //NOR
+                    registers[_rd] = ~(registers[_rs] | registers[_rt]);
+                    break;
+                case 0x00:      //Shift Left Logical
+                    registers[_rd] = registers[_rt] << _shamt;
+                    break;
+                case 0x02:      //Shift Right Logical
+                    registers[_rd] = registers[_rt] >> _shamt;
+                    break;
+                case 0x03:      //Shift Right Arithmetic
+                    if(registers[_rd] < 0) {
+                        _extImm = _extImm << (32 - _shamt);
+                        registers[_rd] = registers[_rt] >> _shamt;
+                        registers[_rd] = registers[_rd] & _extImm;
+                    }else {
+                        registers[_rd] = registers[_rt] >> _shamt;
+                    }break;;
+                case 0x2a:      //Set Less Than
+                    registers[_rd] = (registers[_rs] < registers[_rt])? 1 : 0;
+                    break;
+                case 0x08:      //Jump Register
+                    pc = registers[_rs];
+                    break;
+                default:
+                    return 0;
+            }
+        case 0x08:      //ADD Immediate
+            registers[_rt] = registers[_rs] + _signExtImm;
+            break;
+        case 0x0C:      //AND Immediate
+            registers[_rt] = registers[_rs] & _zeroExtImm;
+            break;
+        case 0x0D:      //OR Immediate
+            registers[_rt] = registers[_rs] | _zeroExtImm;
+            break;
+        case 0x23:      //Load Word
+            registers[_rt] = memory[registers[_rs] + _signExtImm];
+            break;
+        case 0x2B:      //Store Word
+            memory[registers[_rs] + _signExtImm] = registers[_rt];
+            break;
+        case 0x0A:      //Set Less Than Immediate
+            registers[_rt] = (registers[_rs] < _signExtImm)? 1 : 0;
+            break;
+        case 0x04:      //Branch On Equal
+            if(registers[_rs] == registers[_rt])
+                pc = pc + 4 + _branchAddr;
+            break;
+        case 0x05:      //Branch On Not Equal
+            if(registers[_rs] != registers[_rt])
+                pc = pc + 4 + _branchAddr;
+            break;
+        case 0x02:      //Jump
+            pc = _jumpAddr;
+            break;
+        case 0x03:      //Jump And Link
+            registers[31]=pc+8;
+            pc = _jumpAddr;
+            break;
+        default:
+            return 0;
+//        case 0x3F:      //halt
+    }
+	return 1;
 }
 
 
