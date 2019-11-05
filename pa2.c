@@ -19,6 +19,7 @@
 #include <string.h>
 #include <inttypes.h>
 #include <ctype.h>
+//#include <lm.h>
 
 /*====================================================================*/
 /*          ****** DO NOT MODIFY ANYTHING FROM THIS LINE ******       */
@@ -209,25 +210,25 @@ static int process_instruction(unsigned int instr)
             switch(_funct){
                 case 0x20:      //ADD
                     registers[_rd] = registers[_rs] + registers[_rt];
-                    return 1;
+                    break;
                 case 0x22:      //SUB
                     registers[_rd] = registers[_rs] - registers[_rt];
-                    return 1;
+                    break;
                 case 0x24:      //AND
                     registers[_rd] = registers[_rs] & registers[_rt];
-                    return 1;
+                    break;
                 case 0x25:      //OR
                     registers[_rd] = registers[_rs] | registers[_rt];
-                    return 1;
+                    break;
                 case 0x27:      //NOR
                     registers[_rd] = ~(registers[_rs] | registers[_rt]);
-                    return 1;
+                    break;
                 case 0x00:      //Shift Left Logical
                     registers[_rd] = registers[_rt] << _shamt;
-                    return 1;
+                    break;
                 case 0x02:      //Shift Right Logical
                     registers[_rd] = registers[_rt] >> _shamt;
-                    return 1;
+                    break;
                 case 0x03:      //Shift Right Arithmetic
                     if((signed int)registers[_rt] < 0) {
                         _extImm = _extImm << (32 - _shamt);
@@ -235,16 +236,16 @@ static int process_instruction(unsigned int instr)
                         registers[_rd] = registers[_rd] | _extImm;
                     }else {
                         registers[_rd] = registers[_rt] >> _shamt;
-                    }return 1;
+                    }break;
                 case 0x2a:      //Set Less Than
                     registers[_rd] = (registers[_rs] < registers[_rt])? 1 : 0;
-                    return 1;
+                    break;
                 case 0x08:      //Jump Register
                     pc = registers[_rs];
-                    return 1;
+                    break;
                 default:
                     return 0;
-            }
+            }return 1;
         case 0x08:      //ADD Immediate
             registers[_rt] = registers[_rs] + _signExtImm;
             break;
@@ -324,7 +325,36 @@ static int process_instruction(unsigned int instr)
 
 static int load_program(char * const filename)
 {
-	return -EINVAL;
+    char _fileCodeLine[MAX_COMMAND] = {'\0'};
+    FILE *_loadFile = fopen(filename,"r");
+
+    if (!_loadFile) {
+        fprintf(stderr, "No input file %s\n", filename);
+        return -EINVAL;
+    }
+
+    int _memory_num = INITIAL_PC;
+
+    while (fgets(_fileCodeLine, sizeof(_fileCodeLine), _loadFile)) {
+
+        int _machineInstruction = strtoimax(_fileCodeLine, NULL, 0);
+
+        memory[_memory_num + 0] = _machineInstruction >> 24;
+        memory[_memory_num + 1] = _machineInstruction >> 16;
+        memory[_memory_num + 2] = _machineInstruction >> 8;
+        memory[_memory_num + 3] = _machineInstruction;
+
+        _memory_num += 4;
+    }
+
+    memory[_memory_num + 0] = 0xFF;
+    memory[_memory_num + 1] = 0xFF;
+    memory[_memory_num + 2] = 0xFF;
+    memory[_memory_num + 3] = 0xFF;
+
+    fclose(_loadFile);
+
+    return 0;
 }
 
 
@@ -348,6 +378,21 @@ static int load_program(char * const filename)
 static int run_program(void)
 {
 	pc = INITIAL_PC;
+
+    int _pcInstruction = ((unsigned int)(memory[pc]) << 24)
+                         |((unsigned int)(memory[pc + 1]) << 16)
+                         |((unsigned int)(memory[pc + 2]) << 8)
+                         |((unsigned int)(memory[pc + 3]));
+
+    while (process_instruction(_pcInstruction)){
+        pc += 4;
+
+        _pcInstruction = ((unsigned int)(memory[pc]) << 24)
+                         |((unsigned int)(memory[pc + 1]) << 16)
+                         |((unsigned int)(memory[pc + 2]) << 8)
+                         |((unsigned int)(memory[pc + 3]));
+    }
+    pc += 4;
 
 	return 0;
 }
