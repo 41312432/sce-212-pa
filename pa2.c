@@ -156,10 +156,15 @@ static int process_instruction(unsigned int instr)
 
     int _extImm = 0xFFFFFFFF;
 
-    _opcode = instr & (0xFC000000);     //31~26Mask
+    _opcode = instr & (0xFC000000);     // **31~26Mask**
     _opcode = _opcode >> 26;
 
-    if(_opcode == 0){         //R-format
+    /*
+     * check the format using opcode and
+     * set the constructor value from whole instr
+     * following format
+     */
+    if(_opcode == 0){// **R-format**
         _rs = instr & (0x03E00000);     //25~21Mask
         _rs = _rs >> 21;
 
@@ -173,15 +178,15 @@ static int process_instruction(unsigned int instr)
         _shamt = _shamt >> 6;
 
         _funct = instr & (0x0000003F);      //5~0Mask
-    }else if(_opcode == 0x02 || _opcode == 0x03){        //J-format
-
+    }// **J-format**
+    else if(_opcode == 0x02 || _opcode == 0x03){
         _addr = instr & (0x03FFFFFF);       //25~0Mask
-        _jumpAddr = ( (pc & (0xF0000000)) + (_addr << 2) + 0b00);
-    }else if(_opcode == 0x3F){          //halt
-
+        _jumpAddr = ( (pc & (0xF0000000)) | (_addr << 2) | 0b00);
+    }// **halt**
+    else if(_opcode == 0x3F){
         return 0;
-    }else{          //I-format
-
+    }// **I-format**
+    else{
         _rs = instr & (0x03E00000);     //25~21Mask
         _rs = _rs >> 21;
 
@@ -204,7 +209,9 @@ static int process_instruction(unsigned int instr)
         else
             _branchAddr = (0x00000000 + (_imme << 2) + 0b00 );
     }
-
+    /*
+     * do real instruction with value made from constructor
+     */
     switch(_opcode){
         case 0:
             switch(_funct){
@@ -325,18 +332,21 @@ static int process_instruction(unsigned int instr)
 
 static int load_program(char * const filename)
 {
-    char _fileCodeLine[MAX_COMMAND] = {'\0'};
-    FILE *_loadFile = fopen(filename,"r");
+    char _fileCodeLine[256] = {'\0'};
+    FILE *_loadFile = fopen(filename,"r");  //open file
 
+    //if there is not file that has the filename
     if (!_loadFile) {
         fprintf(stderr, "No input file %s\n", filename);
         return -EINVAL;
     }
 
+    //1st memory_number is INITIAL PC
     int _memory_num = INITIAL_PC;
 
     while (fgets(_fileCodeLine, sizeof(_fileCodeLine), _loadFile)) {
 
+        //remove caption and type casting from str to int
         int _machineInstruction = strtoimax(_fileCodeLine, NULL, 0);
 
         memory[_memory_num + 0] = _machineInstruction >> 24;
@@ -347,6 +357,7 @@ static int load_program(char * const filename)
         _memory_num += 4;
     }
 
+    //make halt instruction
     memory[_memory_num + 0] = 0xFF;
     memory[_memory_num + 1] = 0xFF;
     memory[_memory_num + 2] = 0xFF;
@@ -377,22 +388,25 @@ static int load_program(char * const filename)
  */
 static int run_program(void)
 {
+    //get first pc instruction
 	pc = INITIAL_PC;
 
     int _pcInstruction = ((unsigned int)(memory[pc]) << 24)
                          |((unsigned int)(memory[pc + 1]) << 16)
                          |((unsigned int)(memory[pc + 2]) << 8)
                          |((unsigned int)(memory[pc + 3]));
+    int check = 0;
 
-    while (process_instruction(_pcInstruction)){
-        pc += 4;
+    do{
+        pc += 4;    //automatically increase the pc address
+        check = process_instruction(_pcInstruction);    //process instruction
 
+        //get next memory' instruction
         _pcInstruction = ((unsigned int)(memory[pc]) << 24)
                          |((unsigned int)(memory[pc + 1]) << 16)
                          |((unsigned int)(memory[pc + 2]) << 8)
                          |((unsigned int)(memory[pc + 3]));
-    }
-    pc += 4;
+    }while(check);  //if halt
 
 	return 0;
 }
