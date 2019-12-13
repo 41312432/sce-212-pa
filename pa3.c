@@ -166,6 +166,7 @@ int load_word(unsigned int addr)
 
 
     int set_start_num = index * nr_ways;
+    int mem_start_num = (addr / (nr_words_per_block * 4)) * (nr_words_per_block * 4);
 
     for(int i = 0 ; i <nr_ways ; i++){
 
@@ -180,7 +181,7 @@ int load_word(unsigned int addr)
         if(cache[set_start_num + i].valid == CB_INVALID){
             printf("비어있는 way에 들어감");
             for(int j = 0 ; j < nr_words_per_block * 4 ; j++){
-                cache[set_start_num + i].data[j] = memory[addr + j];
+                cache[set_start_num + i].data[j] = memory[mem_start_num + j];
             }
             cache[set_start_num + i].valid = CB_VALID;
             cache[set_start_num + i].tag = tag;
@@ -201,7 +202,7 @@ int load_word(unsigned int addr)
         }
     }
     for(int i = 0 ; i < nr_words_per_block * 4 ; i++){
-        cache[LRU_Block].data[i] = memory[addr + i];
+        cache[LRU_Block].data[i] = memory[mem_start_num + i];
     }
     cache[LRU_Block].valid = CB_VALID;
     cache[LRU_Block].tag = tag;
