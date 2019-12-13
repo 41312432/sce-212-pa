@@ -152,9 +152,62 @@ static int log2_discrete(int n)
  */
 int load_word(unsigned int addr)
 {
-	/* TODO: Implement your load_word function */
+    int offset_n = log2_discrete(nr_words_per_block * 4);
+    int index_m = log2_discrete(nr_blocks / nr_ways);
+    printf("n:%d, m:%d \n",offset_n,index_m);
 
-	return CACHE_MISS;
+    int index_mask = (1 << index_m) - 1;   //index mask
+    int index = (addr >> offset_n) & index_mask;
+    printf("index: %d\n",index);
+
+    int tag_mask = ~((1 << (offset_n + index_m))- 1);
+    int tag = (addr & tag_mask) >> (offset_n + index_m);
+    printf("tag : %d \n",tag);
+
+
+    int set_start_num = index * nr_ways;
+
+    for(int i = 0 ; i <nr_ways ; i++){
+
+        //이미 그 셋의 way중 하나에 있을경우 (Cache HIT)
+        if(cache[set_start_num + i].tag == tag && cache[set_start_num + i].valid == CB_VALID){
+            printf("이미 그 셋의 way중 하나에 있음");
+            cache[set_start_num + i ].timestamp = cycles;
+            return CACHE_HIT;
+        }
+
+        //Cache_Miss중에, 셋 중 비어있는(invalid)한 way가 남아있는경우
+        if(cache[set_start_num + i].valid == CB_INVALID){
+            printf("비어있는 way에 들어감");
+            for(int j = 0 ; j < nr_words_per_block * 4 ; j++){
+                cache[set_start_num + i].data[j] = memory[addr + j];
+            }
+            cache[set_start_num + i].valid = CB_VALID;
+            cache[set_start_num + i].tag = tag;
+            cache[set_start_num + i].timestamp = cycles;
+            return CACHE_MISS;
+        }
+    }
+
+    printf("LRU");
+    //이미 그 셋이 전부 차 있는경우 (valid는 나중에 생각)
+    int LRU = cache[set_start_num].timestamp;
+    int LRU_Block = 0;
+
+    for(int i = 1 ; i < nr_ways ; i++){
+        if(cache[set_start_num + i].timestamp < LRU) {
+            LRU = cache[set_start_num + i].timestamp;
+            LRU_Block = i;
+        }
+    }
+    for(int i = 0 ; i < nr_words_per_block * 4 ; i++){
+        cache[LRU_Block].data[i] = memory[addr + i];
+    }
+    cache[LRU_Block].valid = CB_VALID;
+    cache[LRU_Block].tag = tag;
+    cache[LRU_Block].timestamp = cycles;
+
+    return CACHE_MISS;
 }
 
 
