@@ -209,7 +209,7 @@ int load_word(unsigned int addr)
     if(cache[set_start_num + LRU_Block].dirty){
         printf("DIRTY");
 
-        int dirty_mem_addr = ((cache[set_start_num + LRU_Block].tag << (index_m + offset_n)) + ( LRU_Block << offset_n));
+        int dirty_mem_addr = (((cache[set_start_num + LRU_Block].tag) << (index_m + offset_n)) + ((set_start_num)<< offset_n));
 
         for(int i = 0 ; i < nr_words_per_block * 4 ; i++){
             memory[dirty_mem_addr + i] = cache[set_start_num + LRU_Block].data[i];
@@ -266,7 +266,7 @@ int store_word(unsigned int addr, unsigned int data)
 
 
     int set_start_num = index * nr_ways;
-    int mem_start_num = (addr / (nr_words_per_block * 4)) * (nr_words_per_block * 4);
+    int mem_start_num = addr & (~((1<<offset_n)-1));
 
     int seperated_data[BYTES_PER_WORD];
 
@@ -318,19 +318,24 @@ int store_word(unsigned int addr, unsigned int data)
     int LRU = cache[set_start_num].timestamp;
     int LRU_Block = 0;
 
-    for(int i = 1 ; i < nr_ways ; i++){
-        if(cache[set_start_num + i].timestamp < LRU) {
+    for(int i = 1 ; i < nr_ways ; i++) {
+        if (cache[set_start_num + i].timestamp < LRU) {
             LRU = cache[set_start_num + i].timestamp;
             LRU_Block = i;
         }
     }
-
     if(cache[set_start_num + LRU_Block].dirty){
-        for(int i = 0 ; i < nr_words_per_block * 4 ; i++){
-            memory[mem_start_num + i] = cache[set_start_num + LRU_Block].data[i];
+        printf("DIRTY");
+
+        int dirty_mem_addr = (((cache[set_start_num + LRU_Block].tag) << (index_m + offset_n)) + ( (set_start_num ) << offset_n));
+
+        for(int j = 0 ; j < nr_words_per_block * 4 ; j++){
+            memory[dirty_mem_addr + j] = cache[set_start_num + LRU_Block].data[j];
         }
     }
+
     for (int j = 0; j < nr_words_per_block * 4; j++) {
+//        printf("\n\n 메모리 시작 주소 : %x",mem_start_num);
         cache[set_start_num + LRU_Block].data[j] = memory[mem_start_num + j];
     }
     cache[set_start_num + LRU_Block].valid = CB_VALID;
@@ -338,7 +343,8 @@ int store_word(unsigned int addr, unsigned int data)
     cache[set_start_num + LRU_Block].timestamp = cycles;
     for(int j = 0 ; j < BYTES_PER_WORD ; j++){
         cache[set_start_num].data[offset + j] = seperated_data[j];
-    }    cache[set_start_num + LRU_Block].dirty = CB_DIRTY;
+    }
+    cache[set_start_num + LRU_Block].dirty = CB_DIRTY;
 
     return CACHE_MISS;
 }
