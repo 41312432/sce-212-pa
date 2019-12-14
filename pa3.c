@@ -328,7 +328,7 @@ int store_word(unsigned int addr, unsigned int data)
         printf("DIRTY");
 
         int dirty_mem_addr = (((cache[set_start_num + LRU_Block].tag) << (index_m + offset_n)) + ( (set_start_num ) << offset_n));
-
+        printf("\n\n\n dirty_meme : %x", dirty_mem_addr);
         for(int j = 0 ; j < nr_words_per_block * 4 ; j++){
             memory[dirty_mem_addr + j] = cache[set_start_num + LRU_Block].data[j];
         }
@@ -342,7 +342,7 @@ int store_word(unsigned int addr, unsigned int data)
     cache[set_start_num + LRU_Block].tag = tag;
     cache[set_start_num + LRU_Block].timestamp = cycles;
     for(int j = 0 ; j < BYTES_PER_WORD ; j++){
-        cache[set_start_num].data[offset + j] = seperated_data[j];
+        cache[set_start_num + LRU_Block].data[offset + j] = seperated_data[j];
     }
     cache[set_start_num + LRU_Block].dirty = CB_DIRTY;
 
