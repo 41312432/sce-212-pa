@@ -160,6 +160,10 @@ int load_word(unsigned int addr)
     int index = (addr >> offset_n) & index_mask;
     printf("index: %d\n",index);
 
+    int offset_mask = (1 << offset_n) - 1;
+    int offset = (addr) & offset_mask;
+    printf("offset : %d \n", offset);
+
     int tag_mask = ~((1 << (offset_n + index_m))- 1);
     int tag = (addr & tag_mask) >> (offset_n + index_m);
     printf("tag : %d \n",tag);
@@ -191,7 +195,7 @@ int load_word(unsigned int addr)
     }
 
     printf("LRU");
-    //이미 그 셋이 전부 차 있는경우 (valid는 나중에 생각)
+    //이미 그 셋이 전부 차 있는경우
     int LRU = cache[set_start_num].timestamp;
     int LRU_Block = 0;
 
@@ -201,12 +205,25 @@ int load_word(unsigned int addr)
             LRU_Block = i;
         }
     }
-    for(int i = 0 ; i < nr_words_per_block * 4 ; i++){
-        cache[LRU_Block].data[i] = memory[mem_start_num + i];
+
+    if(cache[set_start_num + LRU_Block].dirty){
+        printf("DIRTY");
+
+        int dirty_mem_addr = ((cache[set_start_num + LRU_Block].tag << (index_m + offset_n)) + ( LRU_Block << offset_n));
+
+        for(int i = 0 ; i < nr_words_per_block * 4 ; i++){
+            memory[dirty_mem_addr + i] = cache[set_start_num + LRU_Block].data[i];
+        }
     }
-    cache[LRU_Block].valid = CB_VALID;
-    cache[LRU_Block].tag = tag;
-    cache[LRU_Block].timestamp = cycles;
+
+
+    for(int i = 0 ; i < nr_words_per_block * 4 ; i++){
+        cache[set_start_num + LRU_Block].data[i] = memory[mem_start_num + i];
+    }
+    cache[set_start_num + LRU_Block].valid = CB_VALID;
+    cache[set_start_num + LRU_Block].tag = tag;
+    cache[set_start_num + LRU_Block].timestamp = cycles;
+    cache[set_start_num + LRU_Block].dirty = CB_CLEAN;
 
     return CACHE_MISS;
 }
@@ -236,6 +253,8 @@ int store_word(unsigned int addr, unsigned int data)
 
     int offset_mask = (1 << offset_n) - 1;
     int offset = (addr) & offset_mask;
+    printf("offset : %d \n", offset);
+
 
     int index_mask = (1 << index_m) - 1;   //index mask
     int index = (addr >> offset_n) & index_mask;
@@ -262,8 +281,17 @@ int store_word(unsigned int addr, unsigned int data)
         if (cache[set_start_num + i].tag == tag && cache[set_start_num + i].valid == CB_VALID) {
             printf("이미 그 셋의 way중 하나에 있음");
             cache[set_start_num + i].timestamp = cycles;
+
+//            if(cache[set_start_num].dirty){
+//                printf("DIRTY");
+//
+//                for(int j = 0 ; j < nr_words_per_block * 4 ; j++){
+//                    memory[mem_start_num + j] = cache[set_start_num + i].data[j];
+//                }
+//            }
+
             for(int j = 0 ; j < BYTES_PER_WORD ; j++){
-                cache[set_start_num].data[offset + j] = seperated_data[j];
+                cache[set_start_num + i].data[offset + j] = seperated_data[j];
             }
             cache[set_start_num + i].dirty = CB_DIRTY;
             return CACHE_HIT;
@@ -297,20 +325,20 @@ int store_word(unsigned int addr, unsigned int data)
         }
     }
 
-    if(cache[LRU_Block].dirty){
+    if(cache[set_start_num + LRU_Block].dirty){
         for(int i = 0 ; i < nr_words_per_block * 4 ; i++){
-            memory[mem_start_num + i] = cache[LRU_Block].data[i];
+            memory[mem_start_num + i] = cache[set_start_num + LRU_Block].data[i];
         }
     }
     for (int j = 0; j < nr_words_per_block * 4; j++) {
-        cache[LRU_Block].data[j] = memory[mem_start_num + j];
+        cache[set_start_num + LRU_Block].data[j] = memory[mem_start_num + j];
     }
-    cache[LRU_Block].valid = CB_VALID;
-    cache[LRU_Block].tag = tag;
-    cache[LRU_Block].timestamp = cycles;
+    cache[set_start_num + LRU_Block].valid = CB_VALID;
+    cache[set_start_num + LRU_Block].tag = tag;
+    cache[set_start_num + LRU_Block].timestamp = cycles;
     for(int j = 0 ; j < BYTES_PER_WORD ; j++){
         cache[set_start_num].data[offset + j] = seperated_data[j];
-    }    cache[LRU_Block].dirty = CB_DIRTY;
+    }    cache[set_start_num + LRU_Block].dirty = CB_DIRTY;
 
     return CACHE_MISS;
 }
