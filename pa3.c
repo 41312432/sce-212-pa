@@ -166,25 +166,28 @@ int load_word(unsigned int addr)
 
     int tag_mask = ~((1 << (offset_n + index_m))- 1);
     int tag = (addr & tag_mask) >> (offset_n + index_m);
-    printf("tag : %d \n",tag);
-
+//    printf("tag : %d \n",tag);
 
     int set_start_num = index * nr_ways;
-    int mem_start_num = (addr / (nr_words_per_block * 4)) * (nr_words_per_block * 4);
+    int mem_start_num = addr & (~(offset_mask));
+//    int mem_start_num = (addr / (nr_words_per_block * 4)) * (nr_words_per_block * 4);
 
-    for(int i = 0 ; i <nr_ways ; i++){
-
-        //이미 그 셋의 way중 하나에 있을경우 (Cache HIT)
-        if(cache[set_start_num + i].tag == tag && cache[set_start_num + i].valid == CB_VALID){
-            printf("이미 그 셋의 way중 하나에 있음");
+    for(int i = 0 ; i < nr_ways ; i++){
+        //LOAD CACHE HIT
+        if(cache[set_start_num + i].tag == tag && cache[set_start_num + i].valid == CB_VALID){  //set의 첫번째 index부터 cache를 돌다가 tag가 같고 valid하면 CACHE HIT
+            printf("\n CACHE LOAD HIT");
             cache[set_start_num + i ].timestamp = cycles;
+            cache[set_start_num + i].tag = tag;
+            cache[set_start_num + i].valid = CB_VALID;
             return CACHE_HIT;
         }
+    }
 
-        //Cache_Miss중에, 셋 중 비어있는(invalid)한 way가 남아있는경우
-        if(cache[set_start_num + i].valid == CB_INVALID){
-            printf("비어있는 way에 들어감");
-            for(int j = 0 ; j < nr_words_per_block * 4 ; j++){
+    for(int i = 0 ; i < nr_ways ; i++){
+        //CACHE MISS & EXIST INVALID INDEX
+        if(cache[set_start_num + i].valid == CB_INVALID) {
+            printf("\n CACHE LOAD MISS & THERE IS INVALID INDEX");
+            for (int j = 0; j < nr_words_per_block * 4; j++) {
                 cache[set_start_num + i].data[j] = memory[mem_start_num + j];
             }
             cache[set_start_num + i].valid = CB_VALID;
@@ -194,8 +197,7 @@ int load_word(unsigned int addr)
         }
     }
 
-    printf("LRU");
-    //이미 그 셋이 전부 차 있는경우
+    //CACHE MISS & REPLACE LRU BLOCK
     int LRU = cache[set_start_num].timestamp;
     int LRU_Block = 0;
 
@@ -205,21 +207,24 @@ int load_word(unsigned int addr)
             LRU_Block = i;
         }
     }
+    printf("  LRU BLOCK = %d", LRU_Block);
+
+    printf("\n CACHE LOAD MISS & THERE IS NO INVALID INDEX");
 
     if(cache[set_start_num + LRU_Block].dirty){
-        printf("DIRTY");
+        printf("CACHE MISS REPLACE AND DIRTY");
 
-        int dirty_mem_addr = (((cache[set_start_num + LRU_Block].tag) << (index_m + offset_n)) + ((set_start_num)<< offset_n));
+        int dirty_mem_addr = ((cache[set_start_num + LRU_Block].tag) << (index_m + offset_n)) + ((index) << offset_n);
 
         for(int i = 0 ; i < nr_words_per_block * 4 ; i++){
             memory[dirty_mem_addr + i] = cache[set_start_num + LRU_Block].data[i];
         }
     }
 
-
     for(int i = 0 ; i < nr_words_per_block * 4 ; i++){
         cache[set_start_num + LRU_Block].data[i] = memory[mem_start_num + i];
     }
+
     cache[set_start_num + LRU_Block].valid = CB_VALID;
     cache[set_start_num + LRU_Block].tag = tag;
     cache[set_start_num + LRU_Block].timestamp = cycles;
@@ -249,24 +254,19 @@ int store_word(unsigned int addr, unsigned int data)
 {
     int offset_n = log2_discrete(nr_words_per_block * 4);
     int index_m = log2_discrete(nr_blocks / nr_ways);
-    printf("n:%d, m:%d \n",offset_n,index_m);
-
-    int offset_mask = (1 << offset_n) - 1;
-    int offset = (addr) & offset_mask;
-    printf("offset : %d \n", offset);
-
 
     int index_mask = (1 << index_m) - 1;   //index mask
     int index = (addr >> offset_n) & index_mask;
-    printf("index: %d\n",index);
 
-    int tag_mask = ~((1 << (offset_n + index_m))- 1);   //tag mask
+    int offset_mask = (1 << offset_n) - 1;
+    int offset = (addr) & offset_mask;
+
+    int tag_mask = ~((1 << (offset_n + index_m))- 1);
     int tag = (addr & tag_mask) >> (offset_n + index_m);
-    printf("tag : %d \n",tag);
-
 
     int set_start_num = index * nr_ways;
-    int mem_start_num = addr & (~((1<<offset_n)-1));
+    int mem_start_num = addr & (~(offset_mask));
+//    int mem_start_num = (addr / (nr_words_per_block * 4)) * (nr_words_per_block * 4);
 
     int seperated_data[BYTES_PER_WORD];
 
@@ -275,46 +275,42 @@ int store_word(unsigned int addr, unsigned int data)
     seperated_data[2] = (data & 0x0000FF00) >> 8;
     seperated_data[3] = (data & 0x000000FF) >> 0;
 
-    for(int i = 0 ; i <nr_ways ; i++) {
+    for(int i = 0 ; i < nr_ways ; i++) {
+        //STORE CACHE HIT
+        if ((cache[set_start_num + i].tag == tag) && (cache[set_start_num + i].valid == CB_VALID)) {
+            printf("\nSTORE CACHE HIT");
 
-        //이미 그 셋의 way중 하나에 있을경우 (Cache HIT)
-        if (cache[set_start_num + i].tag == tag && cache[set_start_num + i].valid == CB_VALID) {
-            printf("이미 그 셋의 way중 하나에 있음");
-            cache[set_start_num + i].timestamp = cycles;
-
-//            if(cache[set_start_num].dirty){
-//                printf("DIRTY");
-//
-//                for(int j = 0 ; j < nr_words_per_block * 4 ; j++){
-//                    memory[mem_start_num + j] = cache[set_start_num + i].data[j];
-//                }
-//            }
-
-            for(int j = 0 ; j < BYTES_PER_WORD ; j++){
+            for (int j = 0; j < BYTES_PER_WORD; j++) {
                 cache[set_start_num + i].data[offset + j] = seperated_data[j];
             }
-            cache[set_start_num + i].dirty = CB_DIRTY;
+
+            cache[set_start_num + i].valid = CB_VALID;
+            cache[set_start_num + i].tag = tag;
+            cache[set_start_num + i].timestamp = cycles;
+            cache[set_start_num + i ].dirty = CB_DIRTY;
             return CACHE_HIT;
         }
+    }
 
-        //Cache_Miss중에, 셋 중 비어있는(invalid)한 way가 남아있는경우
+    for(int i = 0 ; i < nr_ways ; i++){
+        //STORE CACHE MISS & THERE IS INVALID INDEX
         if (cache[set_start_num + i].valid == CB_INVALID) {
-            printf("비어있는 way에 들어감");
+            printf("\nSTORE CACHE MISS AND THERE IS INVALID INDEX");
             for (int j = 0; j < nr_words_per_block * 4; j++) {
                 cache[set_start_num + i].data[j] = memory[mem_start_num + j];
+            }
+            for(int j = 0 ; j < BYTES_PER_WORD ; j++){
+                cache[set_start_num + i].data[offset + j] = seperated_data[j];
             }
             cache[set_start_num + i].valid = CB_VALID;
             cache[set_start_num + i].tag = tag;
             cache[set_start_num + i].timestamp = cycles;
-            for(int j = 0 ; j < BYTES_PER_WORD ; j++){
-                cache[set_start_num + i].data[offset + j] = seperated_data[j];
-            }
             cache[set_start_num + i ].dirty = CB_DIRTY;
             return CACHE_MISS;
         }
     }
 
-    //이미 그 셋이 전부 차 있는경우 (valid는 나중에 생각)
+    //CACHE MISS & REPLACE LRU BLOCK
     int LRU = cache[set_start_num].timestamp;
     int LRU_Block = 0;
 
@@ -324,20 +320,23 @@ int store_word(unsigned int addr, unsigned int data)
             LRU_Block = i;
         }
     }
-    if(cache[set_start_num + LRU_Block].dirty){
-        printf("DIRTY");
+    printf("  LRU BLOCK = %d", LRU_Block);
 
-        int dirty_mem_addr = (((cache[set_start_num + LRU_Block].tag) << (index_m + offset_n)) + ( (set_start_num ) << offset_n));
-        printf("\n\n\n dirty_meme : %x", dirty_mem_addr);
-        for(int j = 0 ; j < nr_words_per_block * 4 ; j++){
-            memory[dirty_mem_addr + j] = cache[set_start_num + LRU_Block].data[j];
+    printf("\n CACHE STORE MISS & THERE IS NO INVALID INDEX");
+    if(cache[set_start_num + LRU_Block].dirty){
+
+        int dirty_mem_addr = ((cache[set_start_num + LRU_Block].tag) << (index_m + offset_n)) + ((index) << offset_n);
+        printf("\n RESTORE TO MEM THE DIRTY BLOCK");
+
+        for(int i = 0 ; i < nr_words_per_block * 4 ; i++){
+            memory[dirty_mem_addr + i] = cache[set_start_num + LRU_Block].data[i];
         }
     }
 
     for (int j = 0; j < nr_words_per_block * 4; j++) {
-//        printf("\n\n 메모리 시작 주소 : %x",mem_start_num);
         cache[set_start_num + LRU_Block].data[j] = memory[mem_start_num + j];
     }
+
     cache[set_start_num + LRU_Block].valid = CB_VALID;
     cache[set_start_num + LRU_Block].tag = tag;
     cache[set_start_num + LRU_Block].timestamp = cycles;
