@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+C:/Users/user/CLionProjects/sce212-pa2-2019f/pa2.c
+stdio.h
+-
+stdlib.h
+-
+errno.h
+-
+string.h
+-
+inttypes.h
+-
+ctype.h
+-
+
